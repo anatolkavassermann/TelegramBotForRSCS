@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Data.SqlClient;
-using Org.BouncyCastle.Crypto;
-using Telegram.Bot.Types;
+﻿using System.Data.SqlClient;
 using System.Collections;
 
 namespace tb_lab

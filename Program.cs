@@ -5,19 +5,13 @@ using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
 using tb_lab;
 using Newtonsoft.Json;
-using System.Data.SqlClient;
-using Org.BouncyCastle.Crypto;
-using System.Threading.Tasks;
 using Org.BouncyCastle.Security;
 using System.Net.Mail;
 using System.Net;
 using System.Collections;
-
 /*
 //sendCertReqToCA - отправка запроса на сертификат напрямую УЦ
 //sendCertReqToAdmin - отправка запроса на сертификат админу и получение от него заключения, что запрос корректен
@@ -31,7 +25,7 @@ SecureRandom r = new();
 CA ca = new();
 Admin admin = new();
 flagGiver flagGiver = new();
-Newtonsoft.Json.Linq.JObject mainConfig = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(System.IO.File.ReadAllText("config.json"));
+Newtonsoft.Json.Linq.JObject mainConfig = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(System.IO.File.ReadAllText(""));
 SmtpClient smtpClient = new(mainConfig.Property("SmtpServer").Value.ToString())
 {
     EnableSsl = false,
@@ -46,22 +40,19 @@ ReceiverOptions receiverOptions = new()
 {
     AllowedUpdates = new UpdateType[] { UpdateType.Message, UpdateType.CallbackQuery }
 };
-
 botClient.StartReceiving(
     updateHandler: HandleUpdateAsync,
     pollingErrorHandler: HandlePollingErrorAsync,
     receiverOptions: receiverOptions,
     cancellationToken: cts.Token
 );
-
 var me = await botClient.GetMeAsync();
-
 Console.WriteLine($"Start listening for @{me.Username}");
 Console.ReadLine();
 cts.Cancel();
-
 async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
+    Console.WriteLine("");
     switch (update.Type)
     {
         case UpdateType.Message:
@@ -71,7 +62,7 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
                 {
                     UserName = "Человек без UserName";
                 }
-                Console.WriteLine($"{DateTime.UtcNow} Captured update from {update.Message!.From!.Id} - {UserName} - {update.Message!.Text!}; message type: {update.Message!.Type}");
+                Console.WriteLine($"{DateTime.Now} Captured update from {update.Message!.From!.Id} - {UserName} - {update.Message!.Text!}; message type: {update.Message!.Type} - {update.Message!.Chat!.Id}");
                 var isVerified = sql.IsVerified(connectionString!, update.Message!.From!.Id);
 
                 if (isVerified == "OK")
@@ -81,7 +72,6 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
                         (update.Message!.ReplyToMessage == null) &&
                         (update.Message.ForwardFrom == null)
                     )
-                        //await HandleOKMessageAsync(botClient, update, cancellationToken);
                         Task.Run(() => HandleOKMessageAsync(botClient, update, cancellationToken), cancellationToken);
                     else
                     {
@@ -102,7 +92,6 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
                         (update.Message!.ReplyToMessage == null) &&
                         (update.Message.ForwardFrom == null)
                     )
-                        //await HandleNVMessageAsync(botClient, update, cancellationToken);
                         Task.Run(() => HandleNVMessageAsync(botClient, update, cancellationToken), cancellationToken);
                     else
                         await botClient.SendTextMessageAsync(
@@ -119,7 +108,6 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
                         (update.Message!.ReplyToMessage == null) &&
                         (update.Message.ForwardFrom == null)
                     )
-                        //await HandleNRMessageAsync(botClient, update, cancellationToken);
                         Task.Run(() => HandleNRMessageAsync(botClient, update, cancellationToken), cancellationToken);
                     else
                         await botClient.SendTextMessageAsync(
@@ -137,21 +125,18 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
                 {
                     UserName = "Человек без UserName";
                 }
-                Console.WriteLine($"{DateTime.UtcNow} Captured update from {update.CallbackQuery!.From!.Id} - {UserName} - {update.CallbackQuery!.Data}");
+                Console.WriteLine($"{DateTime.Now} Captured update from {update.CallbackQuery!.From!.Id} - {UserName} - {update.CallbackQuery!.Data}");
                 var isVerified = sql.IsVerified(connectionString!, update.CallbackQuery!.From!.Id);
                 if (isVerified == "OK")
                 {
-                    //await HandleOKCallBackAsync(botClient, update, cancellationToken);
                     Task.Run(() => HandleOKCallBackAsync(botClient, update, cancellationToken), cancellationToken);
                 }
                 else if (isVerified == "NV")
                 {
-                    //await HandleNVCallBackAsync(botClient, update, cancellationToken);
                     Task.Run(() => HandleNVCallBackAsync(botClient, update, cancellationToken), cancellationToken);
                 }
                 else if (isVerified == "NR")
                 {
-                    //await HandleNRCallBackAsync(botClient, update, cancellationToken);
                     Task.Run(() => HandleNRCallBackAsync(botClient, update, cancellationToken), cancellationToken);
                 }
                 break;
@@ -159,7 +144,6 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
     }
     Console.WriteLine("End captured");
 }
-
 async Task HandleNRMessageAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
     string PotentiaStudentID = update.Message!.Text!;
@@ -168,7 +152,6 @@ async Task HandleNRMessageAsync(ITelegramBotClient botClient, Update update, Can
         if (!sql.IsStudentTIDALreadyBinded(connectionString, PotentiaStudentID))
         {
             string StudentID = PotentiaStudentID;
-
             string nonce = "";
             for (int i = 0; i < 64; i++)
             {
@@ -194,7 +177,7 @@ async Task HandleNRMessageAsync(ITelegramBotClient botClient, Update update, Can
                     );
                     sql.SetNonce(connectionString, update.Message!.From!.Id, nonce);
                     var UserName = update.Message!.From!.Username;
-                    if (UserName == null) 
+                    if (UserName == null)
                     {
                         UserName = "Человек без UserName";
                     }
@@ -211,7 +194,6 @@ async Task HandleNRMessageAsync(ITelegramBotClient botClient, Update update, Can
 
                 }
             }
-            
             if (!flag)
             {
                 var UserName = update.Message!.From!.Username;
@@ -240,7 +222,6 @@ async Task HandleNRMessageAsync(ITelegramBotClient botClient, Update update, Can
             cancellationToken: cancellationToken
             );
         }
-
     }
     else if (update.Message!.Text! == "/start")
     {
@@ -269,7 +250,6 @@ async Task HandleNRMessageAsync(ITelegramBotClient botClient, Update update, Can
             );
     }
 }
-
 async Task HandleNVMessageAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
     var UserName = update.Message!.From!.Username;
@@ -292,7 +272,6 @@ async Task HandleNVMessageAsync(ITelegramBotClient botClient, Update update, Can
             cancellationToken: cancellationToken
             );
 }
-
 async Task HandleNRCallBackAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
     var UserName = update.CallbackQuery!.From!.Username;
@@ -315,7 +294,6 @@ async Task HandleNRCallBackAsync(ITelegramBotClient botClient, Update update, Ca
             );
     }
 }
-
 async Task HandleNVCallBackAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
     var UserName = update.CallbackQuery!.From!.Username;
@@ -333,7 +311,6 @@ async Task HandleNVCallBackAsync(ITelegramBotClient botClient, Update update, Ca
             );
     }
 }
-
 async Task HandleOKMessageAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
     Hashtable activeTask = sql.GetStudentActiveTask(connectionString, update.Message!.From!.Id);
@@ -429,7 +406,7 @@ async Task HandleOKMessageAsync(ITelegramBotClient botClient, Update update, Can
                 else
                     await botClient.SendTextMessageAsync(
                             chatId: update.Message!.Chat.Id,
-                            text: $"{sql.GetStudentName(connectionString, update.Message!.From!.Id)}, возникла ошибка при проверке ЭП. Маленькая подсказка: не все, что подписано, защищено !)",
+                            text: $"{sql.GetStudentName(connectionString, update.Message!.From!.Id)}, возникла ошибка при проверке ЭП, либо запрашиваемого ресурса не существует. Маленькая подсказка: не все, что подписано, защищено !)",
                             cancellationToken: cancellationToken,
                             replyMarkup: Keyboards.CreateTasksKeyboard()
                             );
@@ -438,7 +415,6 @@ async Task HandleOKMessageAsync(ITelegramBotClient botClient, Update update, Can
         }
     }
 }
-
 async Task HandleOKCallBackAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
     Hashtable activeTask = sql.GetStudentActiveTask(connectionString, update.CallbackQuery!.From!.Id);
@@ -469,7 +445,7 @@ async Task HandleOKCallBackAsync(ITelegramBotClient botClient, Update update, Ca
             sql.SetActiveTask(connectionString, update.CallbackQuery!.From!.Id, "getResource", 1);
             await botClient.SendTextMessageAsync(
                 chatId: update.CallbackQuery!.Message!.Chat.Id,
-                text: $"{sql.GetStudentName(connectionString, update.CallbackQuery!.From!.Id)}, подписанное JSON сообщение с указанием ресурса, к которому хочешь получить доступ. Доступен 1 ресурс: flag",
+                text: $"{sql.GetStudentName(connectionString, update.CallbackQuery!.From!.Id)}, подписанное JSON сообщение с указанием ресурса, к которому хочешь получить доступ. Доступен 1 ресурс: flag. Пример такой ЭП (для рандомного ресурса):\n\nMIIDogYJKoZIhvcNAQcCoIIDkzCCA48CAQExDjAMBggqhQMHAQECAgUAMCYGCSqGSIb3DQEHAaAZBBd7DQoicmVzb3VyY2UiOiJ0ZXN0Ig0KfaCCAa8wggGrMIIBVqADAgECAhUA7Qv7rmBv8E376hIW4gKK9BojtHswDAYIKoUDBwEBAwIFADAbMRkwFwYDVQQDDBBMYWJCb3RNSUlHQWlLIENBMB4XDTIzMDIwNzE1NTkzM1oXDTI0MDIwNzE1NTkzM1owHjEcMBoGA1UEAwwTTGFiQm90TUlJR0FpSyBBZG1pbjBoMCEGCCqFAwcBAQEBMBUGCSqFAwcBAgEBAQYIKoUDBwEBAgIDQwAEQLAvZ9lReK2jOqDf8OmDsgLfri/K76PaavsU2votR0NZ/787n/XpaoHmOz6acWO0CvsC0ruhqWlMVjgEsgLxj5qjYzBhMA8GA1UdDwEB/wQFAwMA/wEwGgYJKoUDAQEBAQEBAQH/BAoECElzIGFkbWluMBMGA1UdJQQMMAoGCCsGAQUFBwMCMB0GA1UdDgQWBBRmB6UEMAhKTJSXELiEe0aOtfjGqDAMBggqhQMHAQEDAgUAA0EAPV0oHV870gDam27dtNRLSN7uC2FvgOHPQoHzEu8twZ81mVbQDYyd84ZpAVTxVvQG8BJewejtcmONuu37kFymxTGCAZ0wggGZAgEBMDQwGzEZMBcGA1UEAwwQTGFiQm90TUlJR0FpSyBDQQIVAO0L+65gb/BN++oSFuICivQaI7R7MAwGCCqFAwcBAQICBQCggf8wFQYHKoZIhvcNAjEKBggqhQMHAQECAjAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMzAyMDcxNTU5MzNaMC8GCSqGSIb3DQEJBDEiBCDxni7GI9A5i8gXaTgg9nLLgj039uPwnXu4MzaTLmY/WzB9BgsqhkiG9w0BCRACLzFuMGwwajBoMAoGCCqFAwcBAQICBCCR6fToB4d18XtDCIs/hVHXpAG/ovBI/akNh5ZcbAZb9TA4MB+kHTAbMRkwFwYDVQQDDBBMYWJCb3RNSUlHQWlLIENBAhUA7Qv7rmBv8E376hIW4gKK9BojtHswDAYIKoUDBwEBAgIFAARAH3DhonMsbjyMmpqz3TZiojXXJXLoBH3BukiHZgZ6JE061P9UwDB4t/Wm47kGK1Kj1fviVK/0r6b50N6Kf5ewtA==",
                 cancellationToken: cancellationToken,
                 replyMarkup: Keyboards.CreateCancelTaskKeyboard()
                 );
@@ -559,7 +535,6 @@ async Task HandleOKCallBackAsync(ITelegramBotClient botClient, Update update, Ca
         }
     }
 }
-
 Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
 {
     var ErrorMessage = exception switch
@@ -568,7 +543,6 @@ Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, 
             => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
         _ => exception.ToString()
     };
-
     Console.WriteLine(ErrorMessage);
     return Task.CompletedTask;
 }

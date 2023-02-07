@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
+﻿using Telegram.Bot.Types.ReplyMarkups;
 
 namespace tb_lab
 {
@@ -41,7 +35,8 @@ namespace tb_lab
                 CallbackData = "/getResource"
             };
             List<List<InlineKeyboardButton>> keyBoard = new List<List<InlineKeyboardButton>>();
-            keyBoard.Add(new List<InlineKeyboardButton> { sendCertReqToCAButton, sendCertReqToAdminButton });
+            keyBoard.Add(new List<InlineKeyboardButton> { sendCertReqToCAButton });
+            keyBoard.Add(new List<InlineKeyboardButton> { sendCertReqToAdminButton });
             keyBoard.Add(new List<InlineKeyboardButton> { getResourceButton });
             return new InlineKeyboardMarkup(keyBoard);
         }

@@ -16,6 +16,12 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Pkcs;
 using System.Text.RegularExpressions;
 using static System.Formats.Asn1.AsnWriter;
+using Org.BouncyCastle.Asn1.Cms;
+using Org.BouncyCastle.Asn1.Ess;
+using Org.BouncyCastle.Asn1.Pkcs;
+using Org.BouncyCastle.Cms;
+using Org.BouncyCastle.X509.Store;
+using System.Collections;
 
 namespace tb_lab
 {
@@ -111,7 +117,7 @@ namespace tb_lab
             m = new MemoryStream();
             adminStore.Save(m, "".ToCharArray(), secureRandom);
             var adminData = m.ToArray();
-            var adminPkcs12Bytes = Pkcs12Utilities.ConvertToDefiniteLength(caData);
+            var adminPkcs12Bytes = Pkcs12Utilities.ConvertToDefiniteLength(adminData);
             File.WriteAllBytes("", adminPkcs12Bytes);
         }
 
